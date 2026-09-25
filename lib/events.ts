@@ -23,16 +23,20 @@ export async function createEvent(event: Event) {
     return { data: null, error: authError ?? new Error('You must be signed in.') };
   }
 
-  return supabase.from('events').upsert(
-    {
-      event_code: event.eventId,
-      title: event.title,
-      start_time: event.start,
-      end_time: event.end,
-      created_by: authData.user.id,
-    },
-    { onConflict: 'event_code' }
-  );
+  return supabase
+    .from('events')
+    .upsert(
+      {
+        event_code: event.eventId,
+        title: event.title,
+        start_time: event.start,
+        end_time: event.end,
+        created_by: authData.user.id,
+      },
+      { onConflict: 'event_code' }
+    )
+    .select('*')
+    .single();
 }
 
 export async function getEventsByTeacher(teacherId: string): Promise<CloudEvent[]> {

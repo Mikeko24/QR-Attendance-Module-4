@@ -83,11 +83,24 @@ create policy "Events are readable by any authenticated user" on public.events
 
 drop policy if exists "Users can insert events" on public.events;
 create policy "Users can insert events" on public.events
-  for insert with check (auth.role() = 'authenticated');
+  for insert with check (
+    auth.uid() = created_by
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.role = 'teacher'
+    )
+  );
 
 drop policy if exists "Users can update their own events" on public.events;
 create policy "Users can update their own events" on public.events
-  for update using (auth.uid() = created_by);
+  for update using (
+    auth.uid() = created_by
+    and exists (
+      select 1 from public.profiles p
+      where p.id = auth.uid() and p.role = 'teacher'
+    )
+  )
+  with check (auth.uid() = created_by);
 
 drop policy if exists "Students can view their own attendance" on public.attendance;
 create policy "Students can view their own attendance" on public.attendance

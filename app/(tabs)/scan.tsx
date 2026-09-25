@@ -46,7 +46,7 @@ function CenteredMessage({ title, subtitle }: { title: string; subtitle?: string
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  camera: StyleSheet.absoluteFill,
+  camera: StyleSheet.absoluteFillObject,
   title: { fontSize: 20, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 8, textAlign: 'center' },
   subtitle: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: 16 },
   overlay: { position: 'absolute', left: 20, right: 20, bottom: 60, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, padding: 16, alignItems: 'center' },

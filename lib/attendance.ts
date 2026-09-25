@@ -60,22 +60,7 @@ export async function registerAttendance(rawPayload: string): Promise<RegisterRe
   }
 
   let event = await getEventByCode(payload.event);
-  if (!event) {
-    const { data, error } = await supabase
-      .from('events')
-      .insert({
-        event_code: payload.event,
-        title: payload.title ?? 'Untitled Event',
-        start_time: payload.start,
-        end_time: payload.end,
-      })
-      .select('*')
-      .single();
-    if (error || !data) return { success: false, message: 'Could not create event.' };
-    event = data;
-  }
-
-  if (!event) return { success: false, message: 'Could not check event.' };
+  if (!event) return { success: false, message: 'Event not found. Ask the teacher to create a new QR code.' };
 
   const { error } = await supabase.from('attendance').insert({
     student_id: authData.user.id,
