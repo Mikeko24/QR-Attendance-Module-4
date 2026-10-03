@@ -1,38 +1,49 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { COLORS } from '@/constants/colors';
+import { RADIUS } from '@/constants/theme';
 
 type Props = {
   title: string;
-  icon: keyof typeof MaterialIcons.glyphMap;
-  theme?: 'primary';
+  icon?: keyof typeof MaterialIcons.glyphMap;
+  theme?: 'primary' | 'secondary' | 'ghost' | 'danger';
   onPress: () => void;
   disabled?: boolean;
+  loading?: boolean;
+  compact?: boolean;
 };
 
-export default function AppButton({ title, icon, theme, onPress, disabled }: Props) {
+export default function AppButton({ title, icon, theme = 'secondary', onPress, disabled, loading, compact }: Props) {
   const primary = theme === 'primary';
+  const danger = theme === 'danger';
+  const ghost = theme === 'ghost';
+  const muted = disabled || loading;
+  const contentColor = primary || danger ? COLORS.textOnPrimary : ghost ? COLORS.primary : COLORS.textPrimary;
+
   return (
-    <View style={[styles.buttonOuter, disabled && styles.disabled]}>
+    <View style={[styles.buttonOuter, compact && styles.compactOuter, muted && styles.disabled]}>
       <Pressable
         style={({ pressed }) => [
           styles.buttonInner,
+          compact && styles.compactButton,
           primary && styles.primaryButton,
+          danger && styles.dangerButton,
+          ghost && styles.ghostButton,
           pressed && styles.pressed,
         ]}
         onPress={onPress}
-        disabled={disabled}
+        disabled={muted}
         accessibilityRole="button"
         accessibilityLabel={title}
+        accessibilityState={{ disabled: muted, busy: loading }}
       >
-        <MaterialIcons
-          name={icon}
-          size={22}
-          color={primary ? COLORS.textOnPrimary : COLORS.textSecondary}
-          style={styles.icon}
-        />
-        <Text style={[styles.label, primary && styles.primaryLabel]}>{title}</Text>
+        {loading ? (
+          <ActivityIndicator color={contentColor} size="small" style={styles.icon} />
+        ) : icon ? (
+          <MaterialIcons name={icon} size={compact ? 18 : 21} color={contentColor} style={styles.icon} />
+        ) : null}
+        <Text style={[styles.label, { color: contentColor }, compact && styles.compactLabel]}>{title}</Text>
       </Pressable>
     </View>
   );
@@ -43,24 +54,27 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
-    marginBottom: 14,
   },
+  compactOuter: { width: 'auto', alignSelf: 'auto' },
   buttonInner: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     backgroundColor: COLORS.card,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 12,
+    borderRadius: RADIUS.md,
     minHeight: 52,
   },
+  compactButton: { minHeight: 44, paddingVertical: 10, paddingHorizontal: 14 },
   primaryButton: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  primaryLabel: { color: COLORS.textOnPrimary },
+  dangerButton: { backgroundColor: COLORS.danger, borderColor: COLORS.danger },
+  ghostButton: { backgroundColor: 'transparent', borderColor: 'transparent' },
   disabled: { opacity: 0.55 },
-  pressed: { opacity: 0.82 },
+  pressed: { opacity: 0.78 },
   icon: { paddingRight: 10 },
-  label: { fontSize: 17, fontWeight: '600', color: COLORS.textPrimary },
+  label: { fontSize: 16, fontWeight: '800' },
+  compactLabel: { fontSize: 14 },
 });

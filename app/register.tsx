@@ -1,38 +1,29 @@
-import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  useWindowDimensions,
-  View,
-} from 'react-native';
 import { Link } from 'expo-router';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import AppButton from '@/components/AppButton';
+import { FormField, SegmentedControl, Surface } from '@/components/ui';
 import { COLORS } from '@/constants/colors';
+import { RADIUS, SPACING } from '@/constants/theme';
 import { signUp } from '@/lib/auth';
-import type { ProfileRole } from '@/lib/profiles';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
+type RegisterRole = 'student' | 'teacher';
+
 export default function RegisterScreen() {
-  const { width } = useWindowDimensions();
-  const compact = width < 480;
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<ProfileRole>('student');
+  const [role, setRole] = useState<RegisterRole>('student');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
+    if (loading) return;
     if (!fullName.trim() || !email.trim() || !password) {
-      setError('All fields are required.');
+      setError('Complete every required field before creating the account.');
       return;
     }
     if (password !== confirmPassword) {
@@ -44,7 +35,7 @@ export default function RegisterScreen() {
       return;
     }
     if (!isSupabaseConfigured) {
-      setError('Add your Supabase URL and anon key to .env, then restart Expo.');
+      setError('Supabase is not configured. Add the URL and anon key to .env, then restart Expo.');
       return;
     }
 
@@ -56,41 +47,43 @@ export default function RegisterScreen() {
     });
     setLoading(false);
 
-    if (authError) setError(authError.message);
+    if (authError) setError(authError.message || 'Unable to create the account. Check the details and try again.');
     else if (!data.session) setError('Check your email to confirm your account, then sign in.');
   };
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={[styles.panel, compact && styles.compactPanel]}>
-        <Text style={styles.eyebrow}>JOIN QR ATTENDANCE</Text>
-        <Text style={styles.title}>Create your account</Text>
-        <Text style={styles.subtitle}>Choose your role and start checking in with confidence.</Text>
+        <Surface elevated style={styles.panel}>
+          <Text style={styles.eyebrow}>NEW WORKSPACE ACCESS</Text>
+          <Text style={styles.title}>Create your account</Text>
+          <Text style={styles.subtitle}>Choose the role that matches how you will use QR Attendance.</Text>
 
-        <Text style={styles.label}>Full Name</Text>
-        <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="Your full name" placeholderTextColor={COLORS.textSecondary} />
-        <Text style={styles.label}>Email</Text>
-        <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="your.email@school.edu" placeholderTextColor={COLORS.textSecondary} autoCapitalize="none" keyboardType="email-address" />
-        <Text style={styles.label}>Account Type</Text>
-        <View style={styles.roles}>
-          {(['student', 'teacher'] as const).map((option) => (
-            <Pressable key={option} onPress={() => setRole(option)} style={[styles.role, role === option && styles.activeRole]}>
-              <Text style={[styles.roleText, role === option && styles.activeRoleText]}>{option === 'student' ? 'Student' : 'Teacher'}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text style={styles.label}>Password</Text>
-        <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="At least 6 characters" placeholderTextColor={COLORS.textSecondary} secureTextEntry />
-        <Text style={styles.label}>Confirm Password</Text>
-        <TextInput style={styles.input} value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Repeat your password" placeholderTextColor={COLORS.textSecondary} secureTextEntry />
+          <View style={styles.formStack}>
+            <FormField label="Full name" value={fullName} onChangeText={setFullName} placeholder="Your full name" autoCapitalize="words" />
+            <FormField label="Email" value={email} onChangeText={setEmail} placeholder="your.email@school.edu" autoCapitalize="none" keyboardType="email-address" />
+            <View style={styles.roleBlock}>
+              <Text style={styles.fieldLabel}>Account type</Text>
+              <SegmentedControl
+                value={role}
+                onChange={setRole}
+                options={[
+                  { value: 'student', label: 'Student', icon: 'school' },
+                  { value: 'teacher', label: 'Teacher', icon: 'badge' },
+                ]}
+              />
+            </View>
+            <FormField label="Password" value={password} onChangeText={setPassword} placeholder="At least 6 characters" secureTextEntry />
+            <FormField label="Confirm password" value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Repeat your password" secureTextEntry />
+          </View>
 
-        {error && <Text style={styles.error}>{error}</Text>}
-        <View style={styles.actions}>
-          {loading ? <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} /> : <AppButton title="Create Account" icon="person-add" theme="primary" onPress={handleRegister} />}
-          <Link href="/login" style={styles.link}>Already have an account? Sign In</Link>
-        </View>
-        </View>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <View style={styles.actions}>
+            <AppButton title="Create Account" icon="person-add" theme="primary" loading={loading} onPress={handleRegister} />
+            <Link href="/login" style={styles.link}>Already have an account? Sign in</Link>
+          </View>
+        </Surface>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -98,21 +91,15 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  content: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 40 },
-  panel: { width: '100%', maxWidth: 520, backgroundColor: COLORS.elevated, borderWidth: 1, borderColor: COLORS.border, borderRadius: 24, padding: 32, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.08, shadowRadius: 30 },
-  compactPanel: { paddingHorizontal: 20, paddingVertical: 24, borderWidth: 0, borderRadius: 0, shadowOpacity: 0 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.5, color: COLORS.primary, marginBottom: 8 },
-  title: { fontSize: 30, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 6 },
-  subtitle: { fontSize: 16, lineHeight: 24, color: COLORS.textSecondary, marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '600', color: COLORS.textPrimary, marginBottom: 6, marginTop: 10 },
-  input: { minHeight: 50, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: COLORS.textPrimary },
-  roles: { flexDirection: 'row', gap: 10 },
-  role: { flex: 1, minHeight: 48, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.card, borderRadius: 12, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
-  activeRole: { backgroundColor: COLORS.primarySoft, borderColor: COLORS.primary },
-  roleText: { color: COLORS.textSecondary, fontWeight: '600' },
-  activeRoleText: { color: COLORS.primary, fontWeight: '700' },
-  error: { color: COLORS.danger, marginTop: 12, textAlign: 'center' },
-  actions: { width: '100%', marginTop: 20, alignItems: 'center' },
-  loader: { marginVertical: 10 },
-  link: { color: COLORS.primary, textAlign: 'center', fontWeight: '600', paddingVertical: 10 },
+  content: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 36 },
+  panel: { width: '100%', maxWidth: 540, padding: 28 },
+  eyebrow: { color: COLORS.primary, fontSize: 11, fontWeight: '900', letterSpacing: 1.2, marginBottom: 8 },
+  title: { color: COLORS.textPrimary, fontSize: 30, lineHeight: 36, fontWeight: '900' },
+  subtitle: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 8, marginBottom: 24 },
+  formStack: { gap: 14 },
+  roleBlock: { gap: 7 },
+  fieldLabel: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '800' },
+  error: { color: COLORS.danger, backgroundColor: COLORS.dangerSoft, borderRadius: RADIUS.md, padding: 12, marginTop: 16, fontWeight: '700' },
+  actions: { marginTop: SPACING.xl, gap: 14, alignItems: 'center' },
+  link: { color: COLORS.primary, fontSize: 15, fontWeight: '800', paddingVertical: 8 },
 });

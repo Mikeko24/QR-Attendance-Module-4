@@ -55,8 +55,9 @@ export async function signUp(
   password: string,
   profile?: SignUpProfile
 ) {
+  const normalizedEmail = email.trim().toLowerCase();
   const { data, error } = await supabase.auth.signUp({
-    email,
+    email: normalizedEmail,
     password,
     options: profile
       ? {
@@ -82,7 +83,7 @@ export async function signUp(
 }
 
 export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
   if (!error && data.session) setAuth(data.session);
   return { data, error };
 }

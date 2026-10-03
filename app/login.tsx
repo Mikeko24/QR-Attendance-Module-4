@@ -1,38 +1,30 @@
-import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  useWindowDimensions,
-  View,
-} from 'react-native';
 import { Link } from 'expo-router';
+import { useState } from 'react';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import AppButton from '@/components/AppButton';
-import Header from '@/components/Header';
+import { FormField, StatusPill, Surface } from '@/components/ui';
 import { COLORS } from '@/constants/colors';
+import { RADIUS, SHADOWS, SPACING } from '@/constants/theme';
 import { signIn } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 export default function LoginScreen() {
   const { width } = useWindowDimensions();
-  const compact = width < 480;
+  const compact = width < 520;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (loading) return;
     if (!email.trim() || !password) {
-      setError('Email and password are required.');
+      setError('Enter your school email and password to continue.');
       return;
     }
     if (!isSupabaseConfigured) {
-      setError('Add your Supabase URL and anon key to .env, then restart Expo.');
+      setError('Supabase is not configured. Add the URL and anon key to .env, then restart Expo.');
       return;
     }
 
@@ -40,53 +32,39 @@ export default function LoginScreen() {
     setError(null);
     const { error: authError } = await signIn(email.trim(), password);
     setLoading(false);
-    if (authError) setError(authError.message);
+    if (authError) setError(authError.message || 'Unable to sign in. Check your email and password.');
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={[styles.panel, compact && styles.compactPanel]}>
-          <Header title="QR Attendance" />
-          <Text style={styles.eyebrow}>SECURE CHECK-IN</Text>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to manage your events and attendance.</Text>
-
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="your.email@school.edu"
-          placeholderTextColor={COLORS.textSecondary}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          editable={!loading}
-        />
-
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Enter your password"
-          placeholderTextColor={COLORS.textSecondary}
-          secureTextEntry
-          editable={!loading}
-        />
-
-          {error && <Text style={styles.error}>{error}</Text>}
-          <View style={styles.actions}>
-            {loading ? (
-              <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
-            ) : (
-              <AppButton title="Sign In" icon="login" theme="primary" onPress={handleLogin} />
-            )}
-            <Link href="/register" style={styles.link}>Don't have an account? Sign Up</Link>
+        <View style={[styles.shell, compact && styles.compactShell]}>
+          <View style={styles.brandPanel}>
+            <StatusPill label="SECURE ATTENDANCE" tone="primary" />
+            <View>
+              <Text style={styles.brandTitle}>QR Attendance</Text>
+              <Text style={styles.brandCopy}>Fast check-ins for students, event QR creation for teachers, and clean attendance oversight for admins.</Text>
+            </View>
+            <View style={styles.brandStats}>
+              <Text style={styles.brandStat}>Scan</Text>
+              <Text style={styles.brandStat}>Verify</Text>
+              <Text style={styles.brandStat}>Review</Text>
+            </View>
           </View>
+
+          <Surface elevated style={styles.panel}>
+            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.subtitle}>Sign in to continue to your role-specific workspace.</Text>
+            <View style={styles.formStack}>
+              <FormField label="Email" value={email} onChangeText={setEmail} placeholder="your.email@school.edu" autoCapitalize="none" keyboardType="email-address" editable={!loading} />
+              <FormField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" secureTextEntry editable={!loading} />
+            </View>
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            <View style={styles.actions}>
+              <AppButton title="Sign In" icon="login" theme="primary" loading={loading} onPress={handleLogin} />
+              <Link href="/register" style={styles.link}>Create an account</Link>
+            </View>
+          </Surface>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -95,16 +73,28 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  content: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 40 },
-  panel: { width: '100%', maxWidth: 480, backgroundColor: COLORS.elevated, borderWidth: 1, borderColor: COLORS.border, borderRadius: 24, paddingHorizontal: 32, paddingTop: 18, paddingBottom: 32, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.08, shadowRadius: 30 },
-  compactPanel: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24, borderWidth: 0, borderRadius: 0, shadowOpacity: 0 },
-  eyebrow: { fontSize: 12, fontWeight: '700', letterSpacing: 1.5, color: COLORS.primary, marginBottom: 8 },
-  title: { fontSize: 30, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 6 },
-  subtitle: { fontSize: 16, lineHeight: 24, color: COLORS.textSecondary, marginBottom: 22 },
-  label: { fontSize: 14, fontWeight: '600', color: COLORS.textPrimary, marginBottom: 6, marginTop: 10 },
-  input: { minHeight: 50, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: COLORS.textPrimary },
-  error: { color: COLORS.danger, marginTop: 12, textAlign: 'center' },
-  actions: { width: '100%', marginTop: 20, alignItems: 'center' },
-  loader: { marginVertical: 10 },
-  link: { color: COLORS.primary, textAlign: 'center', fontWeight: '600', paddingVertical: 10 },
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 36 },
+  shell: { width: '100%', maxWidth: 960, alignSelf: 'center', flexDirection: 'row', gap: SPACING.xl, alignItems: 'stretch' },
+  compactShell: { flexDirection: 'column' },
+  brandPanel: {
+    flex: 1,
+    minHeight: 360,
+    borderRadius: RADIUS.xl,
+    backgroundColor: COLORS.primaryDark,
+    padding: SPACING.xxl,
+    justifyContent: 'space-between',
+    shadowColor: COLORS.shadow,
+    ...SHADOWS.card,
+  },
+  brandTitle: { color: COLORS.textOnPrimary, fontSize: 42, lineHeight: 48, fontWeight: '900', marginTop: 20 },
+  brandCopy: { color: COLORS.onPrimarySoft, fontSize: 16, lineHeight: 24, marginTop: 14 },
+  brandStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 28 },
+  brandStat: { overflow: 'hidden', color: COLORS.textOnPrimary, borderColor: COLORS.onPrimaryMuted, borderWidth: 1, borderRadius: RADIUS.pill, paddingHorizontal: 12, paddingVertical: 8, fontWeight: '800' },
+  panel: { flex: 1, minWidth: 0, justifyContent: 'center', padding: 28 },
+  title: { color: COLORS.textPrimary, fontSize: 30, lineHeight: 36, fontWeight: '900' },
+  subtitle: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 22, marginTop: 8, marginBottom: 24 },
+  formStack: { gap: 14 },
+  error: { color: COLORS.danger, backgroundColor: COLORS.dangerSoft, borderRadius: RADIUS.md, padding: 12, marginTop: 16, fontWeight: '700' },
+  actions: { marginTop: 22, gap: 14, alignItems: 'center' },
+  link: { color: COLORS.primary, fontSize: 15, fontWeight: '800', paddingVertical: 8 },
 });
